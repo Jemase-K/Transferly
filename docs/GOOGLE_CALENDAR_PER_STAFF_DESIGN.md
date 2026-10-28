@@ -20,9 +20,9 @@ Transferly's shared Firestore schedule remains the operational source of truth; 
 - Transferly is a browser-based JavaScript PWA using Firebase Authentication and Cloud Firestore.
 - Shared bookings are stored at `teams/{teamId}/bookings/{bookingId}`.
 - Existing booking fields include client, type, direction, date, time, pickup/drop-off points, reference, phone, notes and status.
-- New bookings currently receive `status: "scheduled"`; there is no staff-assignment field, duration field, or Calendar integration.
-- Existing Google sign-in is used for Transferly access. Firebase Google sign-in alone does **not** grant Google Calendar API access.
-- Device-only preview/localStorage bookings cannot be reliably synchronised to a staff member's calendar. Calendar sync must be disabled in preview mode.
+- The baseline app created bookings with `status: "scheduled"` and had no assignment or duration controls. This feature branch now adds booking assignment, booking-specific duration, shared service duration defaults, and a contact-details flag for future Calendar event construction.
+- **Google Calendar synchronisation is not implemented yet.** Existing Google sign-in is used for Transferly access. Firebase Google sign-in alone does **not** grant Google Calendar API access.
+- Device-only preview/localStorage bookings cannot be reliably synchronised to a staff member's calendar. Calendar sync must remain disabled in preview mode.
 
 ## 3. Booking and sync data model
 
@@ -140,7 +140,13 @@ Use the booking ID to derive a stable, valid Google event ID (for example, a low
 - Device-only preview bookings do not attempt cloud Calendar sync.
 - Production sync remains disabled until the security and acceptance tests pass.
 
-## 12. Deployment and release gate
+## 12. Implementation status on this branch
+
+- **Implemented in this phase:** assignment selector backed by active team member documents; assignment and duration shown in the schedule; booking-specific duration override; shared per-service and global duration defaults; validation for whole-minute durations from 5 to 1,440; contact-details inclusion flag defaulting to false; Firestore rules validating active assignees and durations; protection against client writes to server-owned `calendarSync` metadata; and a manual test checklist at `docs/GOOGLE_CALENDAR_PREPARATION_TEST_PLAN.md`.
+- **Not yet implemented:** Google OAuth consent/connection flow, encrypted refresh-token storage, Calendar API event create/update/delete, assignment-change migration between calendars, backend retries/reconciliation, Calendar connection status UI, and audit backend for privacy-flag changes.
+- **Testing status:** the test plan is documented but has not been executed against a configured Firebase test project. No automated CI checks were reported for the implementation commit. Do not describe the feature as tested or production-ready.
+
+## 13. Deployment and release gate
 
 This document is a design only. No Google Cloud project settings, OAuth credentials, tokens, live Calendar events, or deployed Cloud Functions are created by this document update. Implementation and configuration are separate steps.
 
