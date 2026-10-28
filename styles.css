@@ -87,3 +87,5 @@
 
 /* Booking assignment and Calendar preparation */
 .field-help{font-size:10px;font-weight:400;line-height:1.4;color:#829087}.checkbox-field{display:flex;align-items:flex-start;gap:9px;line-height:1.45}.checkbox-field input{width:auto;flex:0 0 auto;margin-top:1px}.calendar-settings{margin-top:12px;padding:16px;border:1px solid var(--line);border-radius:12px;background:#fff}.calendar-settings-heading h3{font:700 15px Manrope,sans-serif;margin:5px 0;color:var(--ink)}.calendar-settings-heading p{font-size:11px;line-height:1.5;color:#829087;margin:0 0 13px}.calendar-settings .form-grid{max-width:760px}.calendar-settings .dialog-actions{margin-top:12px}
+
+.calendar-connection{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:10px 0 16px;padding:10px;border:1px solid var(--line);border-radius:9px;background:#f8faf6}.calendar-connection span{font-size:11px;color:#627267}.calendar-connection button:disabled{opacity:.55;cursor:not-allowed}
