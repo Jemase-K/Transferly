@@ -38,6 +38,29 @@ Only verified Google accounts listed in both `firebase-config.js` and `firestore
 
 Firebase's no-cost quotas and plan terms can change. Check the current Firebase pricing and Authentication documentation for your expected usage. Publishing this source code does not make hosting, maps, SMS, email, or other external services free.
 
+## Google Calendar integration (test only)
+
+The per-staff Google Calendar integration is being introduced in stages. The feature branch adds booking assignment, configurable duration defaults, a staff connection panel, and Firebase Cloud Functions for separate Google OAuth consent and Calendar event sync. **Calendar OAuth and sync are gated off by default. Do not enable them in production before the test checklist passes.**
+
+### Required test-project setup
+
+1. Use a dedicated Firebase test project and test Google accounts; do not use real customer data or production staff calendars.
+2. Enable Firebase Authentication, Cloud Firestore, Cloud Functions, and the Google Calendar API in the matching Google Cloud project. Configure the OAuth consent screen for testing and add only the test accounts as test users.
+3. Deploy the updated Firestore rules and Functions from this branch only after reviewing them. The OAuth redirect URI must exactly match the deployed `calendarOAuthCallback` URL, typically `https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/calendarOAuthCallback`.
+4. Set these Firebase Functions secrets interactively (never commit their values): `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_OAUTH_REDIRECT_URI`, `CALENDAR_TOKEN_ENCRYPTION_KEY`, and `TRANSFERLY_APP_URL`.
+5. Generate a 32-byte encryption key locally with `node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"` and provide its output only to the Firebase Secret Manager prompt for `CALENDAR_TOKEN_ENCRYPTION_KEY`. Do not paste it into source code, issue comments, or chat.
+6. Configure the `CALENDAR_SYNC_ENABLED` parameter as `true` **only in the dedicated test project** after the OAuth client and secrets are ready. Leave it `false` in production. The default in code is `false`.
+7. Deploy the test functions and rules, connect a test staff account using the same Google email as their Transferly account, and run `docs/GOOGLE_CALENDAR_PREPARATION_TEST_PLAN.md` plus the Calendar OAuth/event lifecycle checks before considering release.
+
+The backend stores refresh tokens encrypted with AES-256-GCM using a server-side secret; the client cannot read the connection/token documents. The OAuth flow requests Calendar event access plus identity scopes and checks that the connected Google email matches the Transferly staff account. The event worker uses the assigned staff member's primary calendar, the `Africa/Nairobi` timezone, deterministic event IDs, and a default-off feature flag.
+
+### Important limitations
+
+- No Google Cloud project, OAuth client, secrets, deployment, or live calendar events have been configured by this repository change.
+- The functions code and Firestore rules have not yet been run in the Firebase Emulator Suite or against a real test project.
+- Scheduled reconciliation/repair tooling and a fully tested end-to-end release are still outstanding.
+- Keep this PR in draft and do not merge to `main` or enable production sync until the test checklist, security review, and rollback procedure are complete.
+
 ## Configuration and privacy
 
 `firebase-config.js` is intentionally excluded from version control. Firebase web configuration identifies the project and is visible to app users by design; it is not an authorization secret. Firestore Security Rules enforce access to booking data. Never add service-account keys, private credentials, real client records, or production exports to this repository.
