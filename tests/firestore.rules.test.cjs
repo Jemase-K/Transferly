@@ -1,3 +1,4 @@
+const {before, after, test} = require('node:test');
 const {initializeTestEnvironment, assertFails, assertSucceeds} = require('@firebase/rules-unit-testing');
 const {doc, setDoc, updateDoc, getDoc, Timestamp} = require('firebase/firestore');
 const fs = require('node:fs');
