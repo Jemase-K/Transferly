@@ -142,9 +142,10 @@ Use the booking ID to derive a stable, valid Google event ID (for example, a low
 
 ## 12. Implementation status on this branch
 
-- **Implemented in this phase:** assignment selector backed by active team member documents; assignment and duration shown in the schedule; booking-specific duration override; shared per-service and global duration defaults; validation for whole-minute durations from 5 to 1,440; contact-details inclusion flag defaulting to false; Firestore rules validating active assignees and durations; protection against client writes to server-owned `calendarSync` metadata; and a manual test checklist at `docs/GOOGLE_CALENDAR_PREPARATION_TEST_PLAN.md`.
-- **Not yet implemented:** Google OAuth consent/connection flow, encrypted refresh-token storage, Calendar API event create/update/delete, assignment-change migration between calendars, backend retries/reconciliation, Calendar connection status UI, and audit backend for privacy-flag changes.
-- **Testing status:** the test plan is documented but has not been executed against a configured Firebase test project. No automated CI checks were reported for the implementation commit. Do not describe the feature as tested or production-ready.
+- **Implemented in code on this branch:** assignment selector backed by active team member documents; assignment and duration shown in the schedule; booking-specific duration override; shared per-service and global duration defaults; validation for whole-minute durations from 5 to 1,440; contact-details inclusion flag defaulting to false; Firestore rules validating active assignees and durations; protection against client writes to server-owned `calendarSync` metadata; and a manual test checklist at `docs/GOOGLE_CALENDAR_PREPARATION_TEST_PLAN.md`.
+- **Backend code added but not yet tested or deployed:** separate Google OAuth connection and disconnect callables; email identity matching; encrypted refresh-token storage using AES-256-GCM and a server-side secret; a Calendar event write trigger with deterministic IDs, primary-calendar assignment, privacy-aware event content, `Africa/Nairobi` timezone, and a default-off `CALENDAR_SYNC_ENABLED` gate.
+- **Still outstanding:** Firebase Emulator Suite or dedicated test-project validation, scheduled reconciliation/repair tooling, fully tested end-to-end retries, and a backend audit trail for privacy-flag changes. Production OAuth and Calendar sync must remain disabled.
+- **Testing status:** the test plan is documented but has not been executed against a configured Firebase test project. JavaScript syntax and JSON configuration parsing passed; no automated CI checks were reported. Do not describe the feature as tested or production-ready.
 
 ## 13. Deployment and release gate
 
