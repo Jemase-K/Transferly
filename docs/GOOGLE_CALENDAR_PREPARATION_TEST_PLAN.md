@@ -50,6 +50,23 @@
 - [ ] Mobile layout remains usable in the booking dialog and duration settings panel.
 - [ ] Check browser console for errors on sign-in, sign-out, opening/editing bookings, and saving duration settings.
 
+## Google OAuth and Calendar event lifecycle (test project only)
+
+- [ ] With the feature flag false, OAuth start is rejected and no event sync is performed.
+- [ ] With the flag true only in a dedicated test project, an approved staff member can start the OAuth flow.
+- [ ] OAuth callback rejects missing, expired, replayed, or invalid state.
+- [ ] Connecting with a different Google email than the Transferly staff account is rejected.
+- [ ] Refresh tokens are encrypted in server-only Firestore documents; the browser cannot read the connection documents.
+- [ ] A connected assigned booking creates exactly one event on that assignee's primary calendar.
+- [ ] Updating date, time, route, notes or duration updates the same event rather than creating duplicates.
+- [ ] Event times use Africa/Nairobi and the resolved booking/service/global duration.
+- [ ] Client name and phone are omitted by default; they are included only when the operational-need flag is enabled.
+- [ ] Reassignment removes the prior event and creates one on the new assignee's calendar.
+- [ ] Marking completed preserves the event and reflects completion; deleting a booking removes its tracked event.
+- [ ] Disconnect removes tracked Transferly events before revoking the saved grant; failed cleanup/revocation remains visible and retryable.
+- [ ] Expired/revoked tokens and Calendar API failures do not expose tokens or customer data in logs.
+- [ ] Feature flag is verified false in production configuration and no production account/calendar was used during testing.
+
 ## Release gate
 
 Do not merge this PR or enable production Calendar sync until these checks pass. OAuth connection, secure token storage, Calendar API operations, retries, and event reconciliation are not implemented in this phase.
