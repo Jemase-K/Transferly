@@ -46,8 +46,16 @@ service cloud.firestore {
         && data.updatedBy is string
         && data.updatedBy == request.auth.token.email;
     }
+    function validAssignedStaffUpdate(teamId) {
+      return !('assignedStaffUid' in request.resource.data)
+        || request.resource.data.assignedStaffUid == null
+        || (resource.data.keys().hasAny(['assignedStaffUid'])
+          && request.resource.data.assignedStaffUid == resource.data.assignedStaffUid)
+        || (request.resource.data.assignedStaffUid is string
+          && isActiveMember(teamId, request.resource.data.assignedStaffUid));
+    }
     function validBookingUpdate(teamId) {
-      return validAssignedStaff(teamId, request.resource.data)
+      return validAssignedStaffUpdate(teamId)
         && validDuration(request.resource.data)
         && validContactFlag(request.resource.data)
         && (!('calendarSync' in request.resource.data)
