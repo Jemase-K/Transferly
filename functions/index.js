@@ -122,7 +122,7 @@ async function deleteCalendarEvent(teamId, uid, bookingId, calendarId) {
 async function syncBooking(teamId, bookingId, before, after) {
   const beforeUid = before?.assignedStaffUid || before?.calendarSync?.assigneeUid || null;
   const afterUid = after?.assignedStaffUid || null;
-  if (beforeUid && (!after || beforeUid !== afterUid)) await deleteCalendarEvent(teamId, beforeUid, bookingId, before?.calendarSync?.calendarId);
+  if (beforeUid && before?.calendarSync?.eventId && (!after || beforeUid !== afterUid)) await deleteCalendarEvent(teamId, beforeUid, bookingId, before?.calendarSync?.calendarId);
   if (!after) return;
   const ref = bookingRef(teamId, bookingId);
   if (!afterUid) { await ref.update({calendarSync: {status: 'skipped', assigneeUid: null, eventId: null, calendarId: null, lastSyncedAt: admin.firestore.FieldValue.serverTimestamp(), lastErrorCode: null}}); return; }
