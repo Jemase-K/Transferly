@@ -85,8 +85,9 @@ exports.calendarOAuthCallback = onRequest({secrets: [CLIENT_ID, CLIENT_SECRET, R
   const teamId = 'main';
   const stateDocument = stateRef(teamId, hash(rawState));
   let state;
+  let claimedState = false;
   try {
-    await db.runTransaction(async tx => { const snap = await tx.get(stateDocument); if (!snap.exists || snap.data().status !== 'pending' || snap.data().expiresAt.toMillis() < Date.now()) throw new Error('Invalid or expired OAuth state'); state = snap.data(); tx.update(stateDocument, {status: 'processing', processingAt: admin.firestore.FieldValue.serverTimestamp()}); });
+    await db.runTransaction(async tx => { const snap = await tx.get(stateDocument); if (!snap.exists || snap.data().status !== 'pending' || snap.data().expiresAt.toMillis() < Date.now()) throw new Error('Invalid or expired OAuth state'); state = snap.data(); tx.update(stateDocument, {status: 'processing', processingAt: admin.firestore.FieldValue.serverTimestamp()}); claimedState = true; });
     await assertActiveMember(teamId, state.uid, state.email);
     const client = oauthClient();
     const {tokens} = await client.getToken(code);
@@ -108,7 +109,7 @@ exports.calendarOAuthCallback = onRequest({secrets: [CLIENT_ID, CLIENT_SECRET, R
     return res.redirect(303, destination.toString());
   } catch (error) {
     console.error('Google Calendar OAuth callback failed', {code: safeCode(error)});
-    try { await stateDocument.update({status: 'error', failedAt: admin.firestore.FieldValue.serverTimestamp(), errorCode: safeCode(error)}); } catch (_) {}
+    if (claimedState) { try { await stateDocument.update({status: 'error', failedAt: admin.firestore.FieldValue.serverTimestamp(), errorCode: safeCode(error)}); } catch (_) {} }
     return res.status(400).send('Could not connect Google Calendar. Return to Transferly and try again. No token details are displayed here.');
   }
 });
