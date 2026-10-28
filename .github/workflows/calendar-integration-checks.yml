@@ -1,0 +1,28 @@
+name: Transferly Calendar integration checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [design/google-calendar-per-staff, fix/calendar-ci-node-test-hooks]
+  workflow_dispatch:
+
+jobs:
+  syntax-and-firestore-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check JavaScript syntax and JSON
+        run: |
+          node --check app.js
+          node --check functions/index.js
+          node -e "JSON.parse(require('fs').readFileSync('firebase.json','utf8')); JSON.parse(require('fs').readFileSync('functions/package.json','utf8')); console.log('JSON configuration OK')"
+      - name: Install test tools
+        run: npm install --no-save firebase-tools @firebase/rules-unit-testing firebase
+      - name: Test Firestore rules in emulator
+        run: npx firebase emulators:exec --only firestore --project demo-transferly-calendar-rules "node --test tests/firestore.rules.test.cjs"
