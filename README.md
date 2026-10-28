@@ -12,6 +12,7 @@ The app runs as a browser-based progressive web app and can be installed from Ch
 - Record pickup and drop-off points, service price and currency, and who is responsible for payment.
 - Track payments due after service, paid in advance, or paid after service, and update payment status from the schedule.
 - Record client, date, time, reference, phone, notes, status, and reminder offset.
+- Assign bookings to an active staff member and set a booking-specific duration or shared service-type duration defaults (preparation for Google Calendar; live Calendar sync is not enabled).
 - Search and filter by today, upcoming, and completed bookings.
 - Synchronize approved staff bookings in real time through Firebase Authentication and Cloud Firestore.
 - Install on Android from the hosted HTTPS page.
@@ -41,7 +42,7 @@ Firebase's no-cost quotas and plan terms can change. Check the current Firebase 
 
 `firebase-config.js` is intentionally excluded from version control. Firebase web configuration identifies the project and is visible to app users by design; it is not an authorization secret. Firestore Security Rules enforce access to booking data. Never add service-account keys, private credentials, real client records, or production exports to this repository.
 
-Keep the staff email allowlist limited to company accounts. Device-only preview data is stored in that browser's local storage and is not shared between users or devices.
+Keep the staff email allowlist limited to company accounts. The deployed Firestore rules must match the authorised staff list. Active staff member documents are used for assignment options; each allowlisted staff member can initialise their own active member record on first use. Shared event-duration defaults are stored at `teams/main/settings/calendar` and validated by Firestore rules. Device-only preview data is stored in that browser's local storage and is not shared between users or devices.
 
 ## License
 
