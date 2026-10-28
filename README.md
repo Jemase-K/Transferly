@@ -2,6 +2,8 @@
 
 Transferly is a simple, mobile-first staff schedule for client airport pickups and drop-offs, train-station transfers, and rental-car handovers and returns. Staff can add and update bookings, mark journeys complete, and set reminders.
 
+Transferly is owned by **Jemase Travellers & Hire**. The app displays this ownership notice, and the repository's MIT license preserves the copyright notice while allowing use, modification, and redistribution under its terms.
+
 The app runs as a browser-based progressive web app and can be installed from Chrome on Android. With Firebase configured, approved staff share one live Firestore schedule across devices. Without Firebase configuration, the app runs in device-only preview mode.
 
 ## Features
