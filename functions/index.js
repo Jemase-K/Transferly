@@ -15,7 +15,7 @@ const REDIRECT_URI = defineSecret('GOOGLE_OAUTH_REDIRECT_URI');
 const TOKEN_KEY = defineSecret('CALENDAR_TOKEN_ENCRYPTION_KEY');
 const APP_URL = defineSecret('TRANSFERLY_APP_URL');
 const SYNC_ENABLED = defineString('CALENDAR_SYNC_ENABLED', {default: 'false'});
-const SCOPE = ['https://www.googleapis.com/auth/calendar.events'];
+const SCOPE = ['https://www.googleapis.com/auth/calendar.events', 'openid', 'email'];
 const TZ = 'Africa/Nairobi';
 
 function syncEnabled() { return SYNC_ENABLED.value().toLowerCase() === 'true'; }
@@ -65,12 +65,17 @@ exports.calendarOAuthCallback = onRequest({secrets: [CLIENT_ID, CLIENT_SECRET, R
     await assertActiveMember(teamId, state.uid, state.email);
     const client = oauthClient();
     const {tokens} = await client.getToken(code);
+    if (!tokens.access_token) throw new Error('Google did not return an access token');
+    client.setCredentials(tokens);
+    const tokenInfo = await client.getTokenInfo(tokens.access_token);
+    const googleEmail = String(tokenInfo.email || '').toLowerCase();
+    if (!googleEmail || googleEmail !== String(state.email || '').toLowerCase()) throw new Error('Connect using the same Google account used to sign in to Transferly.');
     const connection = connectionRef(teamId, state.uid);
     const oldSnap = await connection.get();
     const old = oldSnap.exists ? oldSnap.data() : null;
     const refreshToken = tokens.refresh_token || (old?.encryptedRefreshToken ? decryptToken(old.encryptedRefreshToken) : null);
     if (!refreshToken) throw new Error('Google did not return a refresh token; disconnect the existing grant in Google Account settings and reconnect.');
-    await connection.set({uid: state.uid, connected: true, googleEmail: state.email, calendarId: 'primary', encryptedRefreshToken: encryptToken(refreshToken), connectedAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(), tokenExpiryDate: tokens.expiry_date || null}, {merge: true});
+    await connection.set({uid: state.uid, connected: true, googleEmail, calendarId: 'primary', encryptedRefreshToken: encryptToken(refreshToken), connectedAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp(), tokenExpiryDate: tokens.expiry_date || null}, {merge: true});
     await stateDocument.update({status: 'complete', completedAt: admin.firestore.FieldValue.serverTimestamp()});
     const bookings = await teamRef(teamId).collection('bookings').where('assignedStaffUid', '==', state.uid).get();
     for (const doc of bookings.docs) { try { await syncBooking(teamId, doc.id, null, doc.data()); } catch (error) { console.error('Calendar initial sync failed', {bookingId: doc.id, code: safeCode(error)}); } }
@@ -122,7 +127,7 @@ async function deleteCalendarEvent(teamId, uid, bookingId, calendarId) {
 async function syncBooking(teamId, bookingId, before, after) {
   const beforeUid = before?.assignedStaffUid || before?.calendarSync?.assigneeUid || null;
   const afterUid = after?.assignedStaffUid || null;
-  if (beforeUid && before?.calendarSync?.eventId && (!after || beforeUid !== afterUid)) await deleteCalendarEvent(teamId, beforeUid, bookingId, before?.calendarSync?.calendarId);
+  if (beforeUid && (before?.calendarSync?.eventId || before?.calendarSync?.status === 'error') && (!after || beforeUid !== afterUid)) await deleteCalendarEvent(teamId, beforeUid, bookingId, before?.calendarSync?.calendarId);
   if (!after) return;
   const ref = bookingRef(teamId, bookingId);
   if (!afterUid) { await ref.update({calendarSync: {status: 'skipped', assigneeUid: null, eventId: null, calendarId: null, lastSyncedAt: admin.firestore.FieldValue.serverTimestamp(), lastErrorCode: null}}); return; }
