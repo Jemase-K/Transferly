@@ -7,6 +7,9 @@ service cloud.firestore {
     function isAllowedStaff() {
       return isVerifiedUser() && request.auth.token.email in ['admin@example.com', 'staff@example.com'];
     }
+    function isAdmin() {
+      return isVerifiedUser() && request.auth.token.email == 'admin@example.com';
+    }
     function isActiveMember(teamId, uid) {
       return exists(/databases/$(database)/documents/teams/$(teamId)/members/$(uid))
         && get(/databases/$(database)/documents/teams/$(teamId)/members/$(uid)).data.active == true;
@@ -43,24 +46,34 @@ service cloud.firestore {
         && data.updatedBy is string
         && data.updatedBy == request.auth.token.email;
     }
+    function validBookingUpdate(teamId) {
+      return validAssignedStaff(teamId, request.resource.data)
+        && validDuration(request.resource.data)
+        && validContactFlag(request.resource.data)
+        && (!('calendarSync' in request.resource.data)
+          || (resource.data.keys().hasAny(['calendarSync'])
+            && request.resource.data.calendarSync == resource.data.calendarSync));
+    }
     match /teams/{teamId}/bookings/{bookingId} {
       allow read: if teamId == 'main' && isAllowedStaff();
-      allow create, update: if teamId == 'main' && isAllowedStaff()
+      allow create: if teamId == 'main' && isAllowedStaff()
         && validAssignedStaff(teamId, request.resource.data)
         && validDuration(request.resource.data)
-        && validContactFlag(request.resource.data);
+        && validContactFlag(request.resource.data)
+        && !('calendarSync' in request.resource.data);
+      allow update: if teamId == 'main' && isAllowedStaff() && validBookingUpdate(teamId);
       allow delete: if teamId == 'main' && isAllowedStaff();
     }
     match /teams/{teamId}/members/{memberUid} {
       allow read: if teamId == 'main' && isAllowedStaff();
       allow create: if teamId == 'main' && isAllowedStaff()
-        && memberUid == request.auth.uid
-        && request.resource.data.uid == request.auth.uid
-        && request.resource.data.email == request.auth.token.email
-        && request.resource.data.active == true;
-      allow update: if teamId == 'main' && isAllowedStaff()
-        && request.auth.token.email == 'admin@example.com';
-      allow delete: if teamId == 'main' && request.auth.token.email == 'admin@example.com';
+        && request.resource.data.uid == memberUid
+        && request.resource.data.active == true
+        && ((memberUid == request.auth.uid
+          && request.resource.data.email == request.auth.token.email)
+          || (isAdmin() && request.resource.data.email is string));
+      allow update: if teamId == 'main' && isAllowedStaff() && isAdmin();
+      allow delete: if teamId == 'main' && isAdmin();
     }
     match /teams/{teamId}/settings/{settingId} {
       allow read: if teamId == 'main' && isAllowedStaff();
