@@ -1,4 +1,5 @@
 {
+  "functions": {"source": "functions", "codebase": "default"},
   "hosting": {
     "public": ".",
     "ignore": ["firebase.json", "firestore.rules", "README.md", "firebase-config.example.js", "**/.*", "**/node_modules/**"]

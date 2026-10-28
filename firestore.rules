@@ -7,8 +7,87 @@ service cloud.firestore {
     function isAllowedStaff() {
       return isVerifiedUser() && request.auth.token.email in ['admin@example.com', 'staff@example.com'];
     }
+    function isAdmin() {
+      return isVerifiedUser() && request.auth.token.email == 'admin@example.com';
+    }
+    function isActiveMember(teamId, uid) {
+      return exists(/databases/$(database)/documents/teams/$(teamId)/members/$(uid))
+        && get(/databases/$(database)/documents/teams/$(teamId)/members/$(uid)).data.active == true;
+    }
+    function validAssignedStaff(teamId, data) {
+      return !('assignedStaffUid' in data)
+        || data.assignedStaffUid == null
+        || (data.assignedStaffUid is string && isActiveMember(teamId, data.assignedStaffUid));
+    }
+    function validDuration(data) {
+      return !('durationMinutes' in data)
+        || data.durationMinutes == null
+        || (data.durationMinutes is int && data.durationMinutes >= 5 && data.durationMinutes <= 1440);
+    }
+    function validContactFlag(data) {
+      return !('calendarContactDetailsRequired' in data)
+        || data.calendarContactDetailsRequired is bool;
+    }
+    function validCalendarSettings(data) {
+      return data.keys().hasOnly(['defaultDurationMinutes', 'serviceTypeDurations', 'updatedAt', 'updatedBy'])
+        && data.keys().hasAll(['defaultDurationMinutes', 'serviceTypeDurations', 'updatedAt', 'updatedBy'])
+        && data.defaultDurationMinutes is int
+        && data.defaultDurationMinutes >= 5 && data.defaultDurationMinutes <= 1440
+        && data.serviceTypeDurations is map
+        && data.serviceTypeDurations.keys().hasOnly(['airport', 'train', 'rental'])
+        && data.serviceTypeDurations.keys().hasAll(['airport', 'train', 'rental'])
+        && data.serviceTypeDurations.airport is int
+        && data.serviceTypeDurations.airport >= 5 && data.serviceTypeDurations.airport <= 1440
+        && data.serviceTypeDurations.train is int
+        && data.serviceTypeDurations.train >= 5 && data.serviceTypeDurations.train <= 1440
+        && data.serviceTypeDurations.rental is int
+        && data.serviceTypeDurations.rental >= 5 && data.serviceTypeDurations.rental <= 1440
+        && data.updatedAt is timestamp
+        && data.updatedBy is string
+        && data.updatedBy == request.auth.token.email;
+    }
+    function validAssignedStaffUpdate(teamId) {
+      return !('assignedStaffUid' in request.resource.data)
+        || request.resource.data.assignedStaffUid == null
+        || (resource.data.keys().hasAny(['assignedStaffUid'])
+          && request.resource.data.assignedStaffUid == resource.data.assignedStaffUid)
+        || (request.resource.data.assignedStaffUid is string
+          && isActiveMember(teamId, request.resource.data.assignedStaffUid));
+    }
+    function validBookingUpdate(teamId) {
+      return validAssignedStaffUpdate(teamId)
+        && validDuration(request.resource.data)
+        && validContactFlag(request.resource.data)
+        && (!('calendarSync' in request.resource.data)
+          || (resource.data.keys().hasAny(['calendarSync'])
+            && request.resource.data.calendarSync == resource.data.calendarSync));
+    }
     match /teams/{teamId}/bookings/{bookingId} {
-      allow read, write: if teamId == 'main' && isAllowedStaff();
+      allow read: if teamId == 'main' && isAllowedStaff();
+      allow create: if teamId == 'main' && isAllowedStaff()
+        && validAssignedStaff(teamId, request.resource.data)
+        && validDuration(request.resource.data)
+        && validContactFlag(request.resource.data)
+        && !('calendarSync' in request.resource.data);
+      allow update: if teamId == 'main' && isAllowedStaff() && validBookingUpdate(teamId);
+      allow delete: if teamId == 'main' && isAllowedStaff();
+    }
+    match /teams/{teamId}/members/{memberUid} {
+      allow read: if teamId == 'main' && isAllowedStaff();
+      allow create: if teamId == 'main' && isAllowedStaff()
+        && request.resource.data.uid == memberUid
+        && request.resource.data.active == true
+        && ((memberUid == request.auth.uid
+          && request.resource.data.email == request.auth.token.email)
+          || (isAdmin() && request.resource.data.email is string));
+      allow update: if teamId == 'main' && isAllowedStaff() && isAdmin();
+      allow delete: if teamId == 'main' && isAdmin();
+    }
+    match /teams/{teamId}/settings/{settingId} {
+      allow read: if teamId == 'main' && isAllowedStaff();
+      allow create, update: if teamId == 'main' && settingId == 'calendar'
+        && isAllowedStaff() && validCalendarSettings(request.resource.data);
+      allow delete: if false;
     }
   }
 }
