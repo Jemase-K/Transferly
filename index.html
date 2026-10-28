@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b3471">
+  <meta name="description" content="Client airport and train transfers, rental handovers and more.">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="assets/brand/Transferly%20Icon%201.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+  <title>Transferly · Client transfers</title>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#home" aria-label="Transferly home"><img class="brand-wordmark" src="assets/brand/Transferly%20Board%201.png" alt="Transferly — Transfers, Rentals, More"><span class="beta-badge">IN-HOUSE BETA</span></a>
+      <div class="topbar-right"><span class="today-label" id="todayLabel"></span><button class="avatar" aria-label="Profile">W</button></div>
+    </header>
+
+    <main id="home">
+      <section class="hero" aria-label="Transfer desk">
+        <img class="hero-banner" src="assets/brand/transferly-hero.png" alt="Every journey, in good hands. Keep client pickups, drop-offs and handovers right on schedule.">
+      </section>
+
+      <section class="stats" aria-label="Today's summary">
+        <article class="stat-card"><span class="stat-icon">◷</span><div><strong id="todayCount">0</strong><span>Today</span></div></article>
+        <article class="stat-card"><span class="stat-icon sage">↗</span><div><strong id="upcomingCount">0</strong><span>Upcoming</span></div></article>
+        <article class="stat-card"><span class="stat-icon amber">✓</span><div><strong id="completedCount">0</strong><span>Completed</span></div></article>
+      </section>
+
+      <section class="schedule-section">
+        <div class="section-heading"><div><span class="eyebrow muted">YOUR OPERATIONS</span><h2>Transfer schedule</h2></div><button class="primary-button" id="newBookingBtn"><span>＋</span> New booking</button></div>
+        <div class="account-bar" id="accountBar"><div class="account-copy"><span class="sync-indicator" id="syncIndicator"></span><div><strong id="accountTitle">This device</strong><span id="accountMessage">Bookings are saved on this device only.</span></div></div><button class="secondary-button" id="signInBtn" type="button">Continue with Google <span>↗</span></button><button class="secondary-button hidden" id="signOutBtn" type="button">Sign out</button></div>
+        <div class="privacy-lock hidden" id="privacyLock" role="status"><span aria-hidden="true">🔒</span><div><strong>Team details are protected</strong><span>Sign in with an approved Transferly account to view the schedule.</span></div></div>
+        <div class="access-notice hidden" id="accessNotice" role="status"></div>
+        <section class="access-requests hidden" id="accessRequestsPanel" aria-labelledby="accessRequestsTitle">
+          <div class="access-requests-heading"><div><span class="eyebrow muted">TEAM ACCESS</span><h3 id="accessRequestsTitle">Staff access requests</h3></div><span class="pending-count" id="accessPendingCount">0 pending</span></div>
+          <div class="access-requests-list" id="accessRequestsList"></div>
+        </section>
+        <div class="reminder-bar"><div><strong>Journey reminders</strong><span id="reminderStatus">Allow notifications to get a reminder while Transferly is open.</span></div><button class="secondary-button" id="enableRemindersBtn" type="button">Enable reminders</button></div>
+        <div class="toolbar"><div class="filters" role="tablist" aria-label="Filter bookings"><button class="filter active" data-filter="all">All <span id="allPill">0</span></button><button class="filter" data-filter="today">Today</button><button class="filter" data-filter="upcoming">Upcoming</button><button class="filter" data-filter="completed">Completed</button></div><label class="search"><span>⌕</span><input id="searchInput" type="search" placeholder="Find a client…" aria-label="Find a client"></label></div>
+        <div class="booking-list" id="bookingList"></div>
+      </section>
+      <footer>Made for the miles between here and there <span>✳</span></footer>
+    </main>
+  </div>
+
+  <dialog id="bookingDialog" class="booking-dialog">
+    <form id="bookingForm">
+      <div class="dialog-heading"><div><span class="eyebrow muted">PLAN A JOURNEY</span><h2 id="bookingDialogTitle">New booking</h2></div><button type="button" class="close-button" id="closeDialog" aria-label="Close">×</button></div>
+      <div class="form-grid">
+        <label class="field full">Client name <span class="required">*</span><input name="client" placeholder="e.g. Alex Morgan" required maxlength="80"></label>
+        <label class="field">Service type <span class="required">*</span><select name="type" required><option value="airport">Airport transfer</option><option value="train">Train station transfer</option><option value="rental">Car rental handover</option></select></label>
+        <label class="field">Direction <span class="required">*</span><select name="direction" required><option value="pickup">Pickup</option><option value="dropoff">Drop-off</option><option value="handover">Handover</option><option value="collection">Collection</option></select></label>
+        <label class="field">Date <span class="required">*</span><input type="date" name="date" required></label>
+        <label class="field">Time <span class="required">*</span><input type="time" name="time" required></label>
+        <label class="field full">Remind me<select name="reminder"><option value="0">No reminder</option><option value="15">15 minutes before</option><option value="30" selected>30 minutes before</option><option value="60">1 hour before</option><option value="120">2 hours before</option><option value="1440">1 day before</option></select></label>
+        <label class="field">Pickup point <span class="required">*</span><input name="pickupPoint" placeholder="Where the client is collected" required maxlength="120"></label>
+        <label class="field">Drop-off point <span class="required">*</span><input name="dropoffPoint" placeholder="Where the client is taken" required maxlength="120"></label>
+        <label class="field">Service price <span class="required">*</span><input name="price" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" required></label>
+        <label class="field">Currency <select name="currency"><option value="KES" selected>KES · Kenyan shilling</option><option value="USD">USD · US dollar</option><option value="EUR">EUR · Euro</option><option value="GBP">GBP · Pound sterling</option></select></label>
+        <label class="field">Payment handled by <select name="paymentResponsible" required><option value="client">Client (self-booking)</option><option value="travel_agent">Travel agent</option></select></label>
+        <label class="field">Payment status <select name="paymentStatus" required><option value="due_after_service">Due after service</option><option value="paid_in_advance">Paid in advance</option><option value="paid_after_service">Paid after service</option></select></label>
+        <label class="field full hidden" id="agentNameField">Travel agent name <span class="required">*</span><input name="agentName" placeholder="Name of partner agency" maxlength="100"></label>
+        <label class="field">Flight / train / booking ref<input name="reference" placeholder="Optional" maxlength="50"></label>
+        <label class="field">Contact number<input name="phone" type="tel" placeholder="Optional" maxlength="30"></label>
+        <label class="field full">Notes for the driver<textarea name="notes" rows="2" placeholder="Luggage, child seat, meeting instructions…" maxlength="250"></textarea></label>
+      </div>
+      <div class="dialog-actions"><button class="secondary-button" type="button" id="cancelDialog">Cancel</button><button class="primary-button" id="saveBookingBtn" type="submit">Save booking <span>↗</span></button></div>
+    </form>
+  </dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

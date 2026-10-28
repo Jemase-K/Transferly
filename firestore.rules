@@ -1,0 +1,14 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isVerifiedUser() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    function isAllowedStaff() {
+      return isVerifiedUser() && request.auth.token.email in ['admin@example.com', 'staff@example.com'];
+    }
+    match /teams/{teamId}/bookings/{bookingId} {
+      allow read, write: if teamId == 'main' && isAllowedStaff();
+    }
+  }
+}
