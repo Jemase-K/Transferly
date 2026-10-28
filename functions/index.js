@@ -67,7 +67,7 @@ exports.calendarDisconnect = onCall({secrets: [CLIENT_ID, CLIENT_SECRET, REDIREC
     }
   }
   const refreshToken = decryptToken(snap.data().encryptedRefreshToken);
-  try { await oauthClient().revokeToken(refreshToken); } catch (error) { console.error('Google token revocation returned an error', {code: safeCode(error)}); }
+  try { await oauthClient().revokeToken(refreshToken); } catch (error) { console.error('Google token revocation returned an error', {code: safeCode(error)}); throw new HttpsError('failed-precondition', 'Google did not confirm revocation. Retry disconnect; the saved connection has not been removed.'); }
   await connection.delete();
   const batch = db.batch();
   for (const doc of bookings.docs) {
