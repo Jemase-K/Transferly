@@ -52,6 +52,31 @@ exports.calendarConnectionStatus = onCall(async request => {
   return {connected: snap.exists && snap.data().connected === true, googleEmail: snap.exists ? (snap.data().googleEmail || null) : null, syncEnabled: syncEnabled()};
 });
 
+exports.calendarDisconnect = onCall({secrets: [CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, TOKEN_KEY]}, async request => {
+  if (!request.auth || request.auth.token.email_verified !== true) throw new HttpsError('unauthenticated', 'Sign in first.');
+  const teamId = 'main';
+  await assertActiveMember(teamId, request.auth.uid, request.auth.token.email);
+  const connection = connectionRef(teamId, request.auth.uid);
+  const snap = await connection.get();
+  if (!snap.exists || !snap.data().encryptedRefreshToken) return {disconnected: true};
+  const bookings = await teamRef(teamId).collection('bookings').where('assignedStaffUid', '==', request.auth.uid).get();
+  for (const doc of bookings.docs) {
+    if (doc.data().calendarSync?.eventId) {
+      try { await deleteCalendarEvent(teamId, request.auth.uid, doc.id, doc.data().calendarSync.calendarId); }
+      catch (error) { console.error('Calendar disconnect cleanup failed', {bookingId: doc.id, code: safeCode(error)}); throw new HttpsError('failed-precondition', 'Some Transferly events could not be removed. Reconnect and retry before disconnecting.'); }
+    }
+  }
+  const refreshToken = decryptToken(snap.data().encryptedRefreshToken);
+  try { await oauthClient().revokeToken(refreshToken); } catch (error) { console.error('Google token revocation returned an error', {code: safeCode(error)}); }
+  await connection.delete();
+  const batch = db.batch();
+  for (const doc of bookings.docs) {
+    batch.update(doc.ref, {calendarSync: {status: 'not_connected', assigneeUid: request.auth.uid, eventId: null, calendarId: null, lastSyncedAt: admin.firestore.FieldValue.serverTimestamp(), lastErrorCode: null}});
+  }
+  await batch.commit();
+  return {disconnected: true};
+});
+
 exports.calendarOAuthCallback = onRequest({secrets: [CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, TOKEN_KEY, APP_URL]}, async (req, res) => {
   if (!syncEnabled()) return res.status(503).send('Transferly Google Calendar integration is disabled until testing is complete.');
   const code = typeof req.query.code === 'string' ? req.query.code : '';
